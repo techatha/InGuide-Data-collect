@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+
+        .control-panel {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .move-label {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .divider {
+            height: 200px;
+            width: 100%;
+            margin: 15px 0;
+            border-radius: 2px;
+        }
+
+        .control-option {
+            background-color: #70a1ff; /* Blue color */
+            color: white;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        .control-option:hover {
+            background-color: #5352ed;
+        }
+    </style>
+</head>
+<body>
+    <div class="control-panel">
+        <h1 class="move-label">Recording as : <span style="font-weight: bold;" id="text">N/A</span></h1>
+        <div class="divider"></div> <!-- Blue divider rectangle -->
+        <button class="control-option" onclick="changeDirection('Halt')">Halt</button>
+        <button class="control-option" onclick="changeDirection('Forward')">Forward</button>
+        <button class="control-option" onclick="changeDirection('Turn')">Turn</button>
+    </div>
+</body>
+<script>
+    const text = document.getElementById("text")
+    let direction = "Halt";
+    changeDirection(direction);
+
+    function changeDirection(newDirection){
+        console.log(newDirection);
+        direction = newDirection;
+        text.textContent = direction;
+    }
+</script>
+</html>
