@@ -24,12 +24,31 @@
 
         .divider {
             background-color: #d6dff3;
-            height: 200px;
+            height: 100%;
             width: 100%;
             margin: 15px 0;
             border-radius: 2px;
             padding: 10px;
         }
+
+        .halt-button {
+            background-color: #ff6b81; /* Pinkish-red color */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.3s;
+        }
+
+        .halt-button:hover {
+            background-color: #ff4757;
+        }
+
 
         .control-option {
             background-color: #70a1ff; /* Blue color */
@@ -62,7 +81,11 @@
         <button class="control-option" onclick="changeDirection('Halt')">Halt</button>
         <button class="control-option" onclick="changeDirection('Forward')">Forward</button>
         <button class="control-option" onclick="changeDirection('Turn')">Turn</button>
-        <button class="control-option" id="requestMotionBtn">Enable Motion Sensors</button>
+        <button class="halt-button" id="requestMotionBtn">Enable Motion Sensors</button>
+        <div class="divider" style="background-color: lightgray">
+            <h1 class="move-label">Console Log</h1>
+            <p id="console_log"></p>
+        </div>
     </div>
 </body>
 <script>
@@ -76,12 +99,25 @@
         direction = newDirection;
         text.textContent = direction;
     }
+
+    const sendInterval = 500;
+    function calculateAverage(arr) {
+          if (arr.length === 0) {
+              return null; // Or 0, or handle as appropriate
+          }
+          consoleLog.textContent = arr.length
+          const sum = arr.reduce((acc, val) => acc + val, 0);
+          return sum / arr.length;
+      }
 </script>
 <script>
     // accessing sensor data
     // GPS
     const textLat = document.getElementById("gps_lat");
     const textLon = document.getElementById("gps_lon");
+    const latitudes = [];
+    const longitudes = [];
+    const consoleLog = document.getElementById("console_log");
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -120,17 +156,24 @@
       // To continuously track the user's position:
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
           // Updated location data
           console.log('Latitude:', latitude);
-          textLat.textContent = latitude.toString();
+          latitudes.push(latitude);
           console.log('Longitude:', longitude);
-          textLon.textContent = longitude.toString();
+          longitudes.push(longitude);
         },
         (error) => {
           // Handle errors
         }
       );
-
+      const gpsIntervalID = setInterval(() => {
+          textLat.textContent = calculateAverage(latitudes).toString();
+          textLon.textContent = calculateAverage(longitudes).toString();
+          latitudes.length = 0;
+          longitudes.length = 0;
+      }, sendInterval);
       // To stop watching the position:
       // navigator.geolocation.clearWatch(watchId);
 
@@ -140,13 +183,20 @@
 </script>
 <script>
     // Device Motion
-    const acc_x = document.getElementById("acc_x");
-    const acc_y = document.getElementById("acc_y");
-    const acc_z = document.getElementById("acc_z");
-    const gyro_alpha = document.getElementById("gyro_alpha");
-    const gyro_beta = document.getElementById("gyro_beta");
-    const gyro_gamma = document.getElementById("gyro_gamma");
+    const textAcc_x = document.getElementById("acc_x");
+    const acc_x = [];
+    const textAcc_y = document.getElementById("acc_y");
+    const acc_y = [];
+    const textAcc_z = document.getElementById("acc_z");
+    const acc_z = [];
+    const textGyro_alpha = document.getElementById("gyro_alpha");
+    const gyro_alpha = [];
+    const textGyro_beta = document.getElementById("gyro_beta");
+    const gyro_beta = [];
+    const textGyro_gamma = document.getElementById("gyro_gamma");
+    const gyro_gamma = [];
     const textInterval = document.getElementById("interval");
+    const permissionBtn = document.getElementById('requestMotionBtn');
 
     function handleMotionEvent(event) {
       const acceleration = event.acceleration;
@@ -154,15 +204,15 @@
       const interval = event.interval;
 
       if (acceleration) {
-        acc_x.textContent = acceleration.x ? acceleration.x.toFixed(2) : '-';
-        acc_y.textContent = acceleration.y ? acceleration.y.toFixed(2) : '-';
-        acc_z.textContent = acceleration.z ? acceleration.z.toFixed(2) : '-';
+        acc_x.push(acceleration.x);
+        acc_y.push(acceleration.y);
+        acc_z.push(acceleration.z);
       }
 
       if (rotationRate) {
-        gyro_alpha.textContent = rotationRate.alpha ? rotationRate.alpha.toFixed(2) : '-';
-        gyro_beta.textContent = rotationRate.beta ? rotationRate.beta.toFixed(2) : '-';
-        gyro_gamma.textContent = rotationRate.gamma ? rotationRate.gamma.toFixed(2) : '-';
+        gyro_alpha.push(rotationRate.alpha);
+        gyro_beta.push(rotationRate.beta);
+        gyro_gamma.push(rotationRate.gamma);
       }
 
       textInterval.textContent = interval ? interval.toFixed(2) : '-';
@@ -178,6 +228,7 @@
           .then(permissionState => {
             if (permissionState === 'granted') {
               window.addEventListener('devicemotion', handleMotionEvent);
+              permissionBtn.style.display = 'none'
             } else {
               console.log('Device motion permission not granted.');
             }
@@ -189,8 +240,24 @@
         window.addEventListener('devicemotion', handleMotionEvent);
       }
     }
+    const imuIntervalID = setInterval(() => {
+        let ave_acc_x = calculateAverage(acc_x);
+        let ave_acc_y = calculateAverage(acc_y);
+        let ave_acc_z = calculateAverage(acc_z);
 
-    document.getElementById('requestMotionBtn').addEventListener('click', requestMotionPermission);
+        let ave_alpha = calculateAverage(gyro_alpha);
+        let ave_beta = calculateAverage(gyro_beta);
+        let ave_gamma = calculateAverage(gyro_gamma);
+
+        textAcc_x.textContent = ave_acc_x;
+        textAcc_y.textContent = ave_acc_y;
+        textAcc_z.textContent = ave_acc_z;
+        textGyro_alpha.textContent = ave_alpha;
+        textGyro_beta.textContent = ave_beta;
+        textGyro_gamma.textContent = ave_gamma;
+    }, sendInterval)
+
+    permissionBtn.addEventListener('click', requestMotionPermission);
     window.addEventListener('devicemotion', handleMotionEvent); // Fallback for older browsers
 </script>
 </html>
