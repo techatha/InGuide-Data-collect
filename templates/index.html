@@ -184,17 +184,17 @@
 <script>
     // Device Motion
     const textAcc_x = document.getElementById("acc_x");
-    const acc_x = [];
+    let acc_x = 0;
     const textAcc_y = document.getElementById("acc_y");
-    const acc_y = [];
+    let acc_y = 0;
     const textAcc_z = document.getElementById("acc_z");
-    const acc_z = [];
+    let acc_z = 0;
     const textGyro_alpha = document.getElementById("gyro_alpha");
-    const gyro_alpha = [];
+    let gyro_alpha = 0;
     const textGyro_beta = document.getElementById("gyro_beta");
-    const gyro_beta = [];
+    let gyro_beta = 0;
     const textGyro_gamma = document.getElementById("gyro_gamma");
-    const gyro_gamma = [];
+    let gyro_gamma = 0;
     const textInterval = document.getElementById("interval");
     const permissionBtn = document.getElementById('requestMotionBtn');
 
@@ -204,15 +204,18 @@
       const interval = event.interval;
 
       if (acceleration) {
-        acc_x.push(acceleration.x);
-        acc_y.push(acceleration.y);
-        acc_z.push(acceleration.z);
+          acc_x = acceleration.x;
+          acc_y = acceleration.y;
+          acc_z = acceleration.z;
       }
 
       if (rotationRate) {
-        gyro_alpha.push(rotationRate.alpha);
-        gyro_beta.push(rotationRate.beta);
-        gyro_gamma.push(rotationRate.gamma);
+        {#gyro_alpha.push(rotationRate.alpha);#}
+        {#gyro_beta.push(rotationRate.beta);#}
+        {#gyro_gamma.push(rotationRate.gamma);#}
+          gyro_alpha = rotationRate.alpha;
+          gyro_beta = rotationRate.beta;
+          gyro_gamma = rotationRate.gamma;
       }
 
       textInterval.textContent = interval ? interval.toFixed(2) : '-';
@@ -241,20 +244,12 @@
       }
     }
     const imuIntervalID = setInterval(() => {
-        let ave_acc_x = calculateAverage(acc_x);
-        let ave_acc_y = calculateAverage(acc_y);
-        let ave_acc_z = calculateAverage(acc_z);
-
-        let ave_alpha = calculateAverage(gyro_alpha);
-        let ave_beta = calculateAverage(gyro_beta);
-        let ave_gamma = calculateAverage(gyro_gamma);
-
-        textAcc_x.textContent = ave_acc_x;
-        textAcc_y.textContent = ave_acc_y;
-        textAcc_z.textContent = ave_acc_z;
-        textGyro_alpha.textContent = ave_alpha;
-        textGyro_beta.textContent = ave_beta;
-        textGyro_gamma.textContent = ave_gamma;
+        textAcc_x.textContent = acc_x;
+        textAcc_y.textContent = acc_y;
+        textAcc_z.textContent = acc_z;
+        textGyro_alpha.textContent = gyro_alpha;
+        textGyro_beta.textContent = gyro_beta;
+        textGyro_gamma.textContent = gyro_gamma;
     }, sendInterval)
 
     permissionBtn.addEventListener('click', requestMotionPermission);
