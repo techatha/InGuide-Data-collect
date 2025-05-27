@@ -182,8 +182,8 @@
         const mean_gyro_y = calculateAverage(gyro_beta);
         const mean_gyro_z = calculateAverage(gyro_gamma);
         const mean_speed = calculateAverage(vel);
-        const mean_lat = calculateAverage(latitudes);
-        const mean_lon = calculateAverage(longitudes);
+        {#const mean_lat = calculateAverage(latitudes);#}
+        {#const mean_lon = calculateAverage(longitudes);#}
         // clear data
         acc_x.length = 0;
         acc_y.length = 0;
@@ -195,8 +195,8 @@
         gyro_beta.length = 0;
         gyro_gamma.length = 0;
         vel.length = 0;
-        latitudes.length = 0;
-        longitudes.length = 0;
+        {#latitudes.length = 0;#}
+        {#longitudes.length = 0;#}
         // update interface
         textAcc_x.textContent = mean_acc_x;
         textAcc_y.textContent = mean_acc_y;
@@ -204,8 +204,8 @@
         textGyro_alpha.textContent = mean_gyro_x;
         textGyro_beta.textContent = mean_gyro_y;
         textGyro_gamma.textContent = mean_gyro_z;
-        textLat.textContent = mean_lat;
-        textLon.textContent = mean_lon;
+        textLat.textContent = lat;
+        textLon.textContent = lon;
         // send data to web server
         let url = baseUrl + "/data?_acc=";
         url = url + mean_acc_x + "," + mean_acc_y + "," + mean_acc_z;
@@ -215,8 +215,8 @@
         url = url + mean_gyro_x + "," + mean_gyro_y + "," + mean_gyro_z;
         url = url + "&_vel=" + mean_speed;
         url = url + "&_action=" + direction;
-        url = url + "&_lat=" + mean_lat;
-        url = url + "&_lon=" + mean_lon;
+        url = url + "&_lat=" + lat;
+        url = url + "&_lon=" + lon;
         fetch(url).then((res) => {
             if (!res.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -250,8 +250,8 @@
 
     // GPS
     const vel = [];
-    const latitudes = [];
-    const longitudes = [];
+    let lat = 0.0;
+    let lon = 0.0;
     // accelerometer
     const acc_x = [];
     const acc_y = [];
@@ -279,6 +279,9 @@
             console.log('Accuracy:', accuracy);
             console.log('Timestamp:', timestamp);
 
+            lat = latitude;
+            lon = longitude;
+
             textVel.textContent = (position.coords.speed !== null
                 && !isNaN(position.coords.speed)) ? position.coords.speed.toFixed(2) : "N/A";
 
@@ -305,9 +308,9 @@
             const speed = (position.coords.speed !== null
                 && !isNaN(position.coords.speed))? position.coords.speed : 0.0;
             console.log("GPS watch lat: " + latitude);
-            latitudes.push(latitude);
             console.log("GPS watch lon: " + longitude);
-            longitudes.push(longitude);
+            lat = latitude;
+            lon = longitude;
             vel.push(speed);
         }, (error) => {
             console.log("Watch GPS error T-T");
