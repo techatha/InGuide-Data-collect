@@ -15,6 +15,10 @@ def hello_world():  # put application's code here
 # /data?_acc=x,y,z&_acc_g=x,y,z&_gyro=x,y,z&_vel=n
 @app.route('/data')
 def write_data_to_csv_file():
+    gps_timestamp = request.args.get("_gps_timestamp", "")
+    imu_timestamp = request.args.get("_imu_timestamp", "")
+    client_timestamp = request.args.get("_timestamp", "")
+
     acc_data_xyz = request.args.get("_acc", "")
     acc_data_gxyz = request.args.get("_acc_g", "")
     gyro_data_xyz = request.args.get("_gyro", "")
@@ -32,11 +36,11 @@ def write_data_to_csv_file():
     with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         if not is_csv_exist:
-            writer.writerow(['acc-x', 'acc_y', 'acc_z', 'acc_gx', 'acc_gy', 'acc_gz', 'gyro_x', 'gyro_y', 'gyro_z',
-                             'gps_lat', 'gps_lon', 'gps_velocity', 'action'])
-        writer.writerow([acc_data_xyz[0], acc_data_xyz[1], acc_data_xyz[2], acc_data_gxyz[0],
-                         acc_data_gxyz[1], acc_data_gxyz[2], gyro_data_xyz[0], gyro_data_xyz[1],
-                         gyro_data_xyz[2], gps_lat, gps_lon, gps_velocity, action])
+            writer.writerow(['timestamp', 'time-imu', 'time-gps', 'acc-x', 'acc_y', 'acc_z', 'acc_gx', 'acc_gy',
+                             'acc_gz', 'gyro_x', 'gyro_y', 'gyro_z', 'gps_lat', 'gps_lon', 'gps_velocity', 'action'])
+        writer.writerow([client_timestamp, imu_timestamp, gps_timestamp, acc_data_xyz[0], acc_data_xyz[1],
+                         acc_data_xyz[2], acc_data_gxyz[0], acc_data_gxyz[1], acc_data_gxyz[2], gyro_data_xyz[0],
+                         gyro_data_xyz[1], gyro_data_xyz[2], gps_lat, gps_lon, gps_velocity, action])
 
     return jsonify({"status": "success"}), 200
 

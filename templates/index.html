@@ -113,7 +113,7 @@
         consoleLog.textContent = arr.length
         const sum = arr.reduce((acc, val) => acc + val, 0);
         return sum / arr.length;
-    };
+    }
     // Device Motion
     function handleMotionEvent(event) {
         const acceleration = event.acceleration;
@@ -137,6 +137,8 @@
             gyro_gamma.push(rotationRate.gamma);
         }
 
+        imu_timestamp = Date.now().toString();
+
         textInterval.textContent = interval ? interval.toFixed(2) : '-';
         console.log('Acceleration (x, y, z):', acceleration
             && `${acceleration.x}, ${acceleration.y}, ${acceleration.z}`);
@@ -145,7 +147,7 @@
         console.log('Rotation Rate (alpha, beta, gamma):', rotationRate
             && `${rotationRate.alpha}, ${rotationRate.beta}, ${rotationRate.gamma}`);
         console.log('Interval:', interval);
-    };
+    }
 
     function requestMotionPermission() {
         if (typeof DeviceMotionEvent !== 'undefined'
@@ -168,7 +170,7 @@
             window.addEventListener('devicemotion', handleMotionEvent);
             permissionBtn.style.display = 'none'
         }
-    };
+    }
 
     function sendUrl() {
         // calculate average
@@ -217,6 +219,9 @@
         url = url + "&_action=" + direction;
         url = url + "&_lat=" + lat;
         url = url + "&_lon=" + lon;
+        url = url + "&_gps_timestamp=" + gps_timestamp;
+        url = url + "&_imu_timestamp=" + imu_timestamp;
+        url = url + "&_timestamp=" + Date.now().toString();
         fetch(url).then((res) => {
             if (!res.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -227,7 +232,7 @@
         }).catch((error) => {
             console.error('Error sending data to server:', error);
         })
-    };
+    }
 </script>
 <script>
     const baseUrl = window.location.origin;
@@ -260,10 +265,12 @@
     const acc_gx = [];
     const acc_gy = [];
     const acc_gz = [];
-    //orientation rate
+    // orientation rate
     const gyro_alpha = [];
     const gyro_beta = [];
     const gyro_gamma = [];
+    // timestamp
+    let gps_timestamp, imu_timestamp;
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
@@ -281,6 +288,7 @@
 
             lat = latitude;
             lon = longitude;
+            gps_timestamp = position.timestamp.toString();
 
             textVel.textContent = (position.coords.speed !== null
                 && !isNaN(position.coords.speed)) ? position.coords.speed.toFixed(2) : "N/A";
@@ -312,6 +320,7 @@
             lat = latitude;
             lon = longitude;
             vel.push(speed);
+            gps_timestamp = position.timestamp.toString();
         }, (error) => {
             console.log("Watch GPS error T-T");
             console.log(error.code);
