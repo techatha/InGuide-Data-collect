@@ -74,8 +74,13 @@
         <div class="divider">
             <p>GPS Lat: <span style="font-weight: bold;" id="gps_lat">Permission Denied</span></p>
             <p>GPS Lon: <span style="font-weight: bold;" id="gps_lon">Permission Denied</span></p>
-            <p>acc (x,y,z): <span style="font-weight: bold;" id="acc_x">-</span>, <span style="font-weight: bold;" id="acc_y">-</span>, <span style="font-weight: bold;" id="acc_z">-</span></p>
-            <p>gyro (α,β,γ): <span style="font-weight: bold;" id="gyro_alpha">-</span>, <span style="font-weight: bold;" id="gyro_beta">-</span>, <span style="font-weight: bold;" id="gyro_gamma">-</span></p>
+            <p>GPS vel: <span style="font-weight: bold;" id="gps_vel">Permission Denied</span></p>
+            <p>acc (x,y,z): <span style="font-weight: bold;" id="acc_x">-</span>,
+                <span style="font-weight: bold;" id="acc_y">-</span>, <span style="font-weight: bold;" id="acc_z">-</span>
+            </p>
+            <p>gyro (α,β,γ): <span style="font-weight: bold;" id="gyro_alpha">-</span>,
+                <span style="font-weight: bold;" id="gyro_beta">-</span>, <span style="font-weight: bold;" id="gyro_gamma">-</span>
+            </p>
             <p>IMU interval: <span style="font-weight: bold;" id="interval">-</span></p>
         </div>
         <button class="control-option" onclick="changeDirection('Halt')">Halt</button>
@@ -99,160 +104,222 @@
         direction = newDirection;
         text.textContent = direction;
     }
-
-    const sendInterval = 500;
-    function calculateAverage(arr) {
-          if (arr.length === 0) {
-              return null; // Or 0, or handle as appropriate
-          }
-          consoleLog.textContent = arr.length
-          const sum = arr.reduce((acc, val) => acc + val, 0);
-          return sum / arr.length;
-      }
 </script>
 <script>
-    // accessing sensor data
-    // GPS
+    function calculateAverage(arr) {
+        if (arr.length === 0) {
+            return 0.0;
+        }
+        consoleLog.textContent = arr.length
+        const sum = arr.reduce((acc, val) => acc + val, 0);
+        return sum / arr.length;
+    };
+    // Device Motion
+    function handleMotionEvent(event) {
+        const acceleration = event.acceleration;
+        const accelerationWithGravity = event.accelerationIncludingGravity;
+        const rotationRate = event.rotationRate;
+        const interval = event.interval;
+
+        if (acceleration) {
+            acc_x.push(acceleration.x);
+            acc_y.push(acceleration.y);
+            acc_z.push(acceleration.z);
+        }
+        if (accelerationWithGravity) {
+            acc_gx.push(accelerationWithGravity.x);
+            acc_gy.push(accelerationWithGravity.y);
+            acc_gz.push(accelerationWithGravity.z);
+        }
+        if (rotationRate) {
+            gyro_alpha.push(rotationRate.alpha);
+            gyro_beta.push(rotationRate.beta);
+            gyro_gamma.push(rotationRate.gamma);
+        }
+
+        textInterval.textContent = interval ? interval.toFixed(2) : '-';
+        console.log('Acceleration (x, y, z):', acceleration
+            && `${acceleration.x}, ${acceleration.y}, ${acceleration.z}`);
+        console.log('Acceleration with g (x, y, z):', accelerationWithGravity && `${
+            accelerationWithGravity.x}, ${accelerationWithGravity.y}, ${accelerationWithGravity.z}`);
+        console.log('Rotation Rate (alpha, beta, gamma):', rotationRate
+            && `${rotationRate.alpha}, ${rotationRate.beta}, ${rotationRate.gamma}`);
+        console.log('Interval:', interval);
+    };
+
+    function requestMotionPermission() {
+        if (typeof DeviceMotionEvent !== 'undefined'
+            && typeof DeviceMotionEvent.requestPermission === 'function') {
+            DeviceMotionEvent.requestPermission().then(permissionState => {
+                if (permissionState === 'granted') {
+                    window.addEventListener('devicemotion', handleMotionEvent);
+                    permissionBtn.style.display = 'none'
+                    // Send data to the web server
+                    intervalId = setInterval(() => {
+                        sendUrl();
+                    }, sendInterval)
+                } else {
+                    console.log('Device motion permission not granted.');
+                }
+            }).catch(error => {
+                console.error('Error requesting device motion permission:', error);
+            });
+        } else {
+            window.addEventListener('devicemotion', handleMotionEvent);
+            permissionBtn.style.display = 'none'
+        }
+    };
+
+    function sendUrl() {
+        // calculate average
+        const mean_acc_x = calculateAverage(acc_x);
+        const mean_acc_y = calculateAverage(acc_y);
+        const mean_acc_z = calculateAverage(acc_z);
+        const mean_acc_gx = calculateAverage(acc_gx);
+        const mean_acc_gy = calculateAverage(acc_gy);
+        const mean_acc_gz = calculateAverage(acc_gz);
+        const mean_gyro_x = calculateAverage(gyro_alpha);
+        const mean_gyro_y = calculateAverage(gyro_beta);
+        const mean_gyro_z = calculateAverage(gyro_gamma);
+        const mean_speed = calculateAverage(vel);
+        const mean_lat = calculateAverage(latitudes);
+        const mean_lon = calculateAverage(longitudes);
+        // clear data
+        acc_x.length = 0;
+        acc_y.length = 0;
+        acc_z.length = 0;
+        acc_gx.length = 0;
+        acc_gy.length = 0;
+        acc_gz.length = 0;
+        gyro_alpha.length = 0;
+        gyro_beta.length = 0;
+        gyro_gamma.length = 0;
+        vel.length = 0;
+        latitudes.length = 0;
+        longitudes.length = 0;
+        // update interface
+        textAcc_x.textContent = mean_acc_x;
+        textAcc_y.textContent = mean_acc_y;
+        textAcc_z.textContent = mean_acc_z;
+        textGyro_alpha.textContent = mean_gyro_x;
+        textGyro_beta.textContent = mean_gyro_y;
+        textGyro_gamma.textContent = mean_gyro_z;
+        textLat.textContent = mean_lat;
+        textLon.textContent = mean_lon;
+        // send data to web server
+        let url = baseUrl + "/data?_acc=";
+        url = url + mean_acc_x + "," + mean_acc_y + "," + mean_acc_z;
+        url = url + "&_acc_g=";
+        url = url + mean_acc_gx + "," + mean_acc_gy + "," + mean_acc_gz;
+        url = url + "&_gyro=";
+        url = url + mean_gyro_x + "," + mean_gyro_y + "," + mean_gyro_z;
+        url = url + "&_vel=" + mean_speed;
+        url = url + "&_action=" + direction;
+        url = url + "&_lat=" + mean_lat;
+        url = url + "&_lon=" + mean_lon;
+        fetch(url).then((res) => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return res.json();
+        }).then((data) => {
+            console.log("csv write:" + data.status)
+        }).catch((error) => {
+            console.error('Error sending data to server:', error);
+        })
+    };
+</script>
+<script>
+    const baseUrl = window.location.origin;
+    // DOM elements
     const textLat = document.getElementById("gps_lat");
     const textLon = document.getElementById("gps_lon");
+    const textVel = document.getElementById("gps_vel");
+    const consoleLog = document.getElementById("console_log");
+    const textAcc_x = document.getElementById("acc_x");
+    const textAcc_y = document.getElementById("acc_y");
+    const textAcc_z = document.getElementById("acc_z");
+    const textGyro_alpha = document.getElementById("gyro_alpha");
+    const textGyro_beta = document.getElementById("gyro_beta");
+    const textGyro_gamma = document.getElementById("gyro_gamma");
+    const textInterval = document.getElementById("interval");
+    const permissionBtn = document.getElementById('requestMotionBtn');
+
+    const sendInterval = 500;
+    let intervalId;
+
+    // GPS
+    const vel = [];
     const latitudes = [];
     const longitudes = [];
-    const consoleLog = document.getElementById("console_log");
+    // accelerometer
+    const acc_x = [];
+    const acc_y = [];
+    const acc_z = [];
+    // acc including gravity
+    const acc_gx = [];
+    const acc_gy = [];
+    const acc_gz = [];
+    //orientation rate
+    const gyro_alpha = [];
+    const gyro_beta = [];
+    const gyro_gamma = [];
+
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const latitude = position.coords.latitude;
-          const longitude = position.coords.longitude;
-          const accuracy = position.coords.accuracy; // Accuracy of the location in meters
-          const timestamp = position.timestamp; // Time at which the location was retrieved
+        navigator.geolocation.getCurrentPosition((position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const accuracy = position.coords.accuracy; // Accuracy of the location in meters
+            const timestamp = position.timestamp; // Time at which the location was retrieved
 
-          console.log('Latitude:', latitude);
-          textLat.textContent = latitude.toString();
-          console.log('Longitude:', longitude);
-          textLon.textContent = longitude.toString();
-          console.log('Accuracy:', accuracy);
-          console.log('Timestamp:', timestamp);
+            console.log('Latitude:', latitude);
+            textLat.textContent = latitude.toString();
+            console.log('Longitude:', longitude);
+            textLon.textContent = longitude.toString();
+            console.log('Accuracy:', accuracy);
+            console.log('Timestamp:', timestamp);
 
-          // Use the location data (e.g., display on a map, send to a server)
-        },
-        (error) => {
-          switch (error.code) {
+            textVel.textContent = (position.coords.speed !== null
+                && !isNaN(position.coords.speed)) ? position.coords.speed.toFixed(2) : "N/A";
+
+        // Use the location data (e.g., display on a map, send to a server)
+        }, (error) => {
+            switch (error.code) {
             case error.PERMISSION_DENIED:
-              console.error('User denied the request for Geolocation.');
-              break;
+                console.error('User denied the request for Geolocation.');
+                break;
             case error.POSITION_UNAVAILABLE:
-              console.error('Location information is unavailable.');
-              break;
+                console.error('Location information is unavailable.');
+                break;
             case error.TIMEOUT:
-              console.error('The request to get user location timed out.');
-              break;
+                console.error('The request to get user location timed out.');
+                break;
             case error.UNKNOWN_ERROR:
-              console.error('An unknown error occurred.');
-              break;
-          }
-        }
-      );
+                console.error('An unknown error occurred.');
+                break;
+            }
+        });
+        const gpsWatchId = navigator.geolocation.watchPosition((position) =>{
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const speed = (position.coords.speed !== null
+                && !isNaN(position.coords.speed))? position.coords.speed : 0.0;
+            console.log("GPS watch lat: " + latitude);
+            latitudes.push(latitude);
+            console.log("GPS watch lon: " + longitude);
+            longitudes.push(longitude);
+            vel.push(speed);
+        }, (error) => {
+            console.log("Watch GPS error T-T");
+            console.log(error.code);
+            console.log(error.message);
+        });
 
-      // To continuously track the user's position:
-      const watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          const latitude = position.coords.latitude;
-          const longitude = position.coords.longitude;
-          // Updated location data
-          console.log('Latitude:', latitude);
-          latitudes.push(latitude);
-          console.log('Longitude:', longitude);
-          longitudes.push(longitude);
-        },
-        (error) => {
-          // Handle errors
-        }
-      );
-      const gpsIntervalID = setInterval(() => {
-          textLat.textContent = calculateAverage(latitudes).toString();
-          textLon.textContent = calculateAverage(longitudes).toString();
-          latitudes.length = 0;
-          longitudes.length = 0;
-      }, sendInterval);
-      // To stop watching the position:
-      // navigator.geolocation.clearWatch(watchId);
+        permissionBtn.addEventListener('click', requestMotionPermission);
+        window.addEventListener('devicemotion', handleMotionEvent); // Fallback for older browsers
 
     } else {
       console.error('Geolocation is not supported by this browser.');
     }
-</script>
-<script>
-    // Device Motion
-    const textAcc_x = document.getElementById("acc_x");
-    let acc_x = 0;
-    const textAcc_y = document.getElementById("acc_y");
-    let acc_y = 0;
-    const textAcc_z = document.getElementById("acc_z");
-    let acc_z = 0;
-    const textGyro_alpha = document.getElementById("gyro_alpha");
-    let gyro_alpha = 0;
-    const textGyro_beta = document.getElementById("gyro_beta");
-    let gyro_beta = 0;
-    const textGyro_gamma = document.getElementById("gyro_gamma");
-    let gyro_gamma = 0;
-    const textInterval = document.getElementById("interval");
-    const permissionBtn = document.getElementById('requestMotionBtn');
-
-    function handleMotionEvent(event) {
-      const acceleration = event.acceleration;
-      const rotationRate = event.rotationRate;
-      const interval = event.interval;
-
-      if (acceleration) {
-          acc_x = acceleration.x;
-          acc_y = acceleration.y;
-          acc_z = acceleration.z;
-      }
-
-      if (rotationRate) {
-        {#gyro_alpha.push(rotationRate.alpha);#}
-        {#gyro_beta.push(rotationRate.beta);#}
-        {#gyro_gamma.push(rotationRate.gamma);#}
-          gyro_alpha = rotationRate.alpha;
-          gyro_beta = rotationRate.beta;
-          gyro_gamma = rotationRate.gamma;
-      }
-
-      textInterval.textContent = interval ? interval.toFixed(2) : '-';
-
-      console.log('Acceleration (x, y, z):', acceleration && `${acceleration.x}, ${acceleration.y}, ${acceleration.z}`);
-      console.log('Rotation Rate (alpha, beta, gamma):', rotationRate && `${rotationRate.alpha}, ${rotationRate.beta}, ${rotationRate.gamma}`);
-      console.log('Interval:', interval);
-    }
-
-    function requestMotionPermission() {
-      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-        DeviceMotionEvent.requestPermission()
-          .then(permissionState => {
-            if (permissionState === 'granted') {
-              window.addEventListener('devicemotion', handleMotionEvent);
-              permissionBtn.style.display = 'none'
-            } else {
-              console.log('Device motion permission not granted.');
-            }
-          })
-          .catch(error => {
-            console.error('Error requesting device motion permission:', error);
-          });
-      } else {
-        window.addEventListener('devicemotion', handleMotionEvent);
-      }
-    }
-    const imuIntervalID = setInterval(() => {
-        textAcc_x.textContent = acc_x;
-        textAcc_y.textContent = acc_y;
-        textAcc_z.textContent = acc_z;
-        textGyro_alpha.textContent = gyro_alpha;
-        textGyro_beta.textContent = gyro_beta;
-        textGyro_gamma.textContent = gyro_gamma;
-    }, sendInterval)
-
-    permissionBtn.addEventListener('click', requestMotionPermission);
-    window.addEventListener('devicemotion', handleMotionEvent); // Fallback for older browsers
 </script>
 </html>
