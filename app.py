@@ -36,7 +36,7 @@ def write_data_to_csv_file():
     with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         if not is_csv_exist:
-            writer.writerow(['timestamp', 'time-imu', 'time-gps', 'acc-x', 'acc_y', 'acc_z', 'acc_gx', 'acc_gy',
+            writer.writerow(['timestamp', 'time_imu', 'time_gps', 'acc_x', 'acc_y', 'acc_z', 'acc_gx', 'acc_gy',
                              'acc_gz', 'gyro_x', 'gyro_y', 'gyro_z', 'gps_lat', 'gps_lon', 'gps_velocity', 'action'])
         writer.writerow([client_timestamp, imu_timestamp, gps_timestamp, acc_data_xyz[0], acc_data_xyz[1],
                          acc_data_xyz[2], acc_data_gxyz[0], acc_data_gxyz[1], acc_data_gxyz[2], gyro_data_xyz[0],
