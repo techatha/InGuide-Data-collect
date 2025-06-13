@@ -31,7 +31,7 @@ def write_data_to_csv_file():
     acc_data_gxyz = [float(x) for x in acc_data_gxyz.split(',')]
     gyro_data_xyz = [float(x) for x in gyro_data_xyz.split(',')]
 
-    filename = 'raw_data/imu-data.csv'
+    filename = 'raw_data/record.csv'
     is_csv_exist = os.path.exists(filename)
     with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)

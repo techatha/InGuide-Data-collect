@@ -71,7 +71,11 @@
 <body>
     <div class="control-panel">
         <h1 class="move-label">Recording as : <span style="font-weight: bold;" id="text">N/A</span></h1>
-        <div class="divider">
+        <button class="control-option" onclick="changeDirection('Halt')">Halt</button>
+        <button class="control-option" onclick="changeDirection('Forward')">Forward</button>
+        <button class="control-option" onclick="changeDirection('Turn')">Turn</button>
+        <button class="halt-button" id="requestMotionBtn">Enable Motion Sensors</button>
+                <div class="divider">
             <p>GPS Lat: <span style="font-weight: bold;" id="gps_lat">Permission Denied</span></p>
             <p>GPS Lon: <span style="font-weight: bold;" id="gps_lon">Permission Denied</span></p>
             <p>GPS vel: <span style="font-weight: bold;" id="gps_vel">Permission Denied</span></p>
@@ -83,10 +87,6 @@
             </p>
             <p>IMU interval: <span style="font-weight: bold;" id="interval">-</span></p>
         </div>
-        <button class="control-option" onclick="changeDirection('Halt')">Halt</button>
-        <button class="control-option" onclick="changeDirection('Forward')">Forward</button>
-        <button class="control-option" onclick="changeDirection('Turn')">Turn</button>
-        <button class="halt-button" id="requestMotionBtn">Enable Motion Sensors</button>
         <div class="divider" style="background-color: lightgray">
             <h1 class="move-label">Console Log</h1>
             <p id="console_log"></p>
@@ -174,16 +174,20 @@
 
     function sendUrl() {
         // calculate average
-        const mean_acc_x = calculateAverage(acc_x);
-        const mean_acc_y = calculateAverage(acc_y);
-        const mean_acc_z = calculateAverage(acc_z);
-        const mean_acc_gx = calculateAverage(acc_gx);
-        const mean_acc_gy = calculateAverage(acc_gy);
-        const mean_acc_gz = calculateAverage(acc_gz);
-        const mean_gyro_x = calculateAverage(gyro_alpha);
-        const mean_gyro_y = calculateAverage(gyro_beta);
-        const mean_gyro_z = calculateAverage(gyro_gamma);
-        const mean_speed = calculateAverage(vel);
+        const latest_acc_x = acc_x.at(-1) ?? 0;
+        const latest_acc_y = acc_y.at(-1) ?? 0;
+        const latest_acc_z = acc_z.at(-1) ?? 0;
+
+        const latest_acc_gx = acc_gx.at(-1) ?? 0;
+        const latest_acc_gy = acc_gy.at(-1) ?? 0;
+        const latest_acc_gz = acc_gz.at(-1) ?? 0;
+
+        const latest_gyro_x = gyro_alpha.at(-1) ?? 0;
+        const latest_gyro_y = gyro_beta.at(-1) ?? 0;
+        const latest_gyro_z = gyro_gamma.at(-1) ?? 0;
+
+        const latest_speed = vel.at(-1) ?? 0;
+
         {#const mean_lat = calculateAverage(latitudes);#}
         {#const mean_lon = calculateAverage(longitudes);#}
         // clear data
@@ -200,22 +204,22 @@
         {#latitudes.length = 0;#}
         {#longitudes.length = 0;#}
         // update interface
-        textAcc_x.textContent = mean_acc_x;
-        textAcc_y.textContent = mean_acc_y;
-        textAcc_z.textContent = mean_acc_z;
-        textGyro_alpha.textContent = mean_gyro_x;
-        textGyro_beta.textContent = mean_gyro_y;
-        textGyro_gamma.textContent = mean_gyro_z;
+        textAcc_x.textContent = latest_acc_x;
+        textAcc_y.textContent = latest_acc_y;
+        textAcc_z.textContent = latest_acc_z;
+        textGyro_alpha.textContent = latest_gyro_x;
+        textGyro_beta.textContent = latest_gyro_y;
+        textGyro_gamma.textContent = latest_gyro_z;
         textLat.textContent = lat;
         textLon.textContent = lon;
         // send data to web server
         let url = baseUrl + "/data?_acc=";
-        url = url + mean_acc_x + "," + mean_acc_y + "," + mean_acc_z;
+        url = url + latest_acc_x + "," + latest_acc_y + "," + latest_acc_z;
         url = url + "&_acc_g=";
-        url = url + mean_acc_gx + "," + mean_acc_gy + "," + mean_acc_gz;
+        url = url + latest_acc_gx + "," + latest_acc_gy + "," + latest_acc_gz;
         url = url + "&_gyro=";
-        url = url + mean_gyro_x + "," + mean_gyro_y + "," + mean_gyro_z;
-        url = url + "&_vel=" + mean_speed;
+        url = url + latest_gyro_x + "," + latest_gyro_y + "," + latest_gyro_z;
+        url = url + "&_vel=" + latest_speed;
         url = url + "&_action=" + direction;
         url = url + "&_lat=" + lat;
         url = url + "&_lon=" + lon;
